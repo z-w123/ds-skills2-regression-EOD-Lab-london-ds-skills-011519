@@ -1,22 +1,27 @@
 
-# Simple Regression Modeling with Boston Housing dataset - Lab
+# Project: Regression Modeling with the Boston Housing Dataset
+
+## Introduction
 
 In this final lab, we shall apply the regression analysis and diagnostics techniques covered in this section to a familiar "Boston Housing" dataset. We performed a detailed EDA for this dataset in earlier section and hence carry a good understanding of how this dataset is composed. This this lab we shall try to identify the predictive ability of some of features found in this dataset towards identifying house price. 
 
-### Objectives:
+## Objectives
 You will be able to:
 * Build many linear models with boston housing data set using OLS
 * For each model, analyze OLS diagnostics for model validity 
 * Visually explain the results and interpret the diagnostics from Statsmodels 
 * Comment on the goodness of fit for a simple regression model
 
-Let's get started. 
+## Let's get started
 
 ### Import necessary libraries and load 'BostonHousing.csv' as pandas dataframe.
 
 
 ```python
-# Your code here
+import pandas as pd 
+import matplotlib.pyplot as plt
+plt.style.use('ggplot')
+boston = pd.read_csv('BostonHousing.csv')
 ```
 
 The data features and target are present as columns in boston data. Boston data gives a set of independent as independent variables in data and the housing rate as `MEDV` in target property. Also feature names are listed in feature_names. The desription is available at [KAGGLE](https://www.kaggle.com/c/boston-housing). 
@@ -25,7 +30,7 @@ The data features and target are present as columns in boston data. Boston data 
 
 
 ```python
-# Your code here
+boston.head()
 ```
 
 
@@ -160,24 +165,25 @@ The data features and target are present as columns in boston data. Boston data 
 
 ```python
 # Record your observations here 
-
+# The dataset mostly contains continuous variables
+# cas and rad are only two categorical variables
+# there are no null and missing values 
 ```
 
 ### Create histograms for all variables in the dataset and comment on their shape (uniform or not ?)
 
 
 ```python
-# Your code here 
+boston.hist(figsize=(18,10) );
 ```
-
-
-![png](index_files/index_8_0.png)
-
 
 
 ```python
 # You observations here 
 
+# We see lot of skewness and kurtosis in most variables e.g. dis, age
+# Some variables have outliers at extreme tails
+# the target variables looks good with some outliers in the right tail 
 ```
 
 Based on this , we shall choose a selection of features which appear to be more 'normal' than others.
@@ -185,7 +191,8 @@ Based on this , we shall choose a selection of features which appear to be more 
 
 
 ```python
-# Your code here
+data = boston[['crim', 'dis', 'rm', 'zn', 'age', 'medv']].copy()
+data.head()
 ```
 
 
@@ -273,7 +280,10 @@ Based on this , we shall choose a selection of features which appear to be more 
 
 
 ```python
-# Your code here 
+for column in ['crim', 'dis', 'rm', 'zn', 'age']:
+    plt.scatter(data[column], data.medv, label=column)
+    plt.legend()
+    plt.show()
 ```
 
 
@@ -299,6 +309,10 @@ Based on this , we shall choose a selection of features which appear to be more 
 
 ```python
 # Your observations here 
+# cim variable's linearity seemd a bit unclear as the values are too close to each other and generally very small
+# there is SOME linearity apparent in variables although the variance along y-axis is a bit unpredictable for some values
+# Some outliers present in almost all cases
+# Data probably needs more normalization and pre-processing to "Clean it up"
 ```
 
 Okie so obviously our data needs a lot of pre-procesing to improve the results. This key behind such kaggle competitions is to process the data in such a way that we can identify the relationships and make predictions in the best possible way. For now, we shall leave the dataset untouched and just move on with regression. So far, our assumptions, although not too strong, but still hold to a level that we can move on. 
@@ -322,7 +336,35 @@ Right here is the real deal. Let's perform a number of simple regression experim
 
 
 ```python
-# Your code here
+# import libraries
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+import scipy.stats as stats
+import statsmodels.stats.api as sms
+
+
+
+results = [['ind_var', 'r_squared', 'intercept', 'slope', 'p-value', 'normality (JB)' ]]
+for idx, val in enumerate(['crim', 'dis', 'rm', 'zn', 'age']):
+    print ("Boston Housing DataSet - Regression Analysis and Diagnostics for formula: medv~" + val)
+    print ("-------------------------------------------------------------------------------------")
+
+    f = 'medv~' + val
+#   
+    model = smf.ols(formula=f, data=data).fit()
+    
+    X_new = pd.DataFrame({val: [data[val].min(), data[val].max()]});
+    preds = model.predict(X_new)
+    data.plot(kind='scatter', x=val, y='medv');
+    plt.plot(X_new, preds, c='red', linewidth=2);
+    plt.show()
+    fig = plt.figure(figsize=(15,8))
+    fig = sm.graphics.plot_regress_exog(model, val, fig=fig)
+    fig = sm.graphics.qqplot(model.resid, dist=stats.norm, line='45', fit=True,   )
+    plt.show()
+    
+    results.append([val, model.rsquared, model.params[0], model.params[1], model.pvalues[1], sms.jarque_bera(model.resid)[0] ])
+    input("Press Enter to continue...")
 ```
 
     Boston Housing DataSet - Regression Analysis and Diagnostics for formula: medv~crim
@@ -510,13 +552,34 @@ pd.DataFrame(results)
 
 ```python
 #Your obervations here 
+# We can do a detailed analysis of each exsperiment and eloborate in detail 
+# Here we shall show a summary of selected observations
 
+# Crime has a negative relationship with price i.e. less crime > higher price and vice vera
+# Crime does not show any clear signs heteroscedasticity 
+# Crime has a low r-squared so not such a good fit 
+# Residuals not normally distributed (needs log normalization that we'll see in next section)
+
+# a positive relationship between dis and medv
+# dis residual plots show some signs of heteroscadasticity as cone shaped residuals
+# normality is still questionable 
+
+# rm shows a strong positive relationship
+# rm residuals show no signs of heteroscdasticity however some outliers are present
+# rm qqplot shows a long right tail which hurts normality 
+
+# zn variable scatter shows a lot of variance  along y axis and hence gives a very slow r-swuared value
+# no clear heteroscedasticity in residuals
+# Normality through Q-Q plots and JB is far from perfect 
+
+# age has a negative relatioship with prices i.e. young people > expensive houses :o
+# Some obvious heteroscadasticity and normality is questionable.
 ```
 
 So clearly the results are not highly reliable. the best good of fit i.e. r-squared is witnessed with `rm`. So clearly in this analysis this is our best predictor. 
 
 ---
-#### So how can we improve upon these results . 
+### So how can we improve upon these results
 1. Pre-Processing 
 
 This is where pre-processing of data comes in. Dealing with outliers, normalizing data, scaling values etc can help regression analysis get more meaningful results from the given set of data 
