@@ -5,10 +5,10 @@ In this final lab, we shall apply the regression analysis and diagnostics techni
 
 ### Objectives:
 You will be able to:
-* Build many linear models with boston housing data set using OLS
-* For each model, analyze OLS diagnostics for model validity 
-* Visually explain the results and interpret the diagnostics from Statsmodels 
-* Comment on the goodness of fit for a simple regression model
+- Build many linear models with boston housing data set using OLS
+- For each model, analyze OLS diagnostics for model validity 
+- Visually explain the results and interpret the diagnostics from Statsmodels 
+- Comment on the goodness of fit for a simple regression model
 
 Let's get started. 
 
